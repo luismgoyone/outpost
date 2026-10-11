@@ -1,7 +1,11 @@
 import { signWebhookBody } from "../../src/lib/github/webhook-signature";
 
 import { E2E, mockGitHubUrl } from "./support/env";
-import { connectRepo, expect, slowNextFetch, test } from "./support/fixtures";
+import { ageCache, cachedAt, connectRepo, expect, slowNextFetch, test } from "./support/fixtures";
+
+// In order, one worker: the header's "Synced" label is global, and the stale-cache tests
+// backdate snapshots, which would race the Sync test's "just now" check.
+test.describe.configure({ mode: "default" });
 
 async function pullQueryCalls(repo: string): Promise<number> {
   const res = await fetch(`${mockGitHubUrl}/__calls?repo=${repo}`);
@@ -22,7 +26,7 @@ test("serves GitHub data from the cache until Sync", async ({ page, signInAs }) 
   expect(await pullQueryCalls("cachey")).toBe(before); // served from cache
 
   await expect(page.getByRole("status").filter({ hasText: /Synced/ })).toContainText(
-    /Synced (just now|\dm ago)/,
+    /Synced (just now|\d+m ago|\dh ago)/,
   );
   await slowNextFetch("cachey", 800);
   await page.getByRole("button", { name: "Sync" }).click();
@@ -32,6 +36,45 @@ test("serves GitHub data from the cache until Sync", async ({ page, signInAs }) 
   await expect.poll(() => pullQueryCalls("cachey")).toBeGreaterThan(before);
   await expect(page.getByRole("button", { name: "Sync", exact: true })).toBeEnabled();
   await expect(page.getByRole("status").filter({ hasText: /Synced/ })).toContainText("just now");
+});
+
+test.describe("stale cache", () => {
+  test("a stale cache is served at once and refreshed in the background", async ({
+    page,
+    signInAs,
+  }) => {
+    await signInAs();
+    await connectRepo(page, "acme/lazy");
+    await expect(page.getByText("Lazy PR")).toBeVisible();
+    const repoUrl = page.url();
+    const before = await pullQueryCalls("lazy");
+
+    await ageCache("lazy", 10); // past the 5-minute TTL, inside the 1-hour stale window
+    await slowNextFetch("lazy", 4000);
+    const started = Date.now();
+    await page.goto(repoUrl);
+    await expect(page.getByText("Lazy PR")).toBeVisible();
+    // Rendered from the stale copy, without waiting on the slow GitHub fetch.
+    expect(Date.now() - started).toBeLessThan(3500);
+
+    await expect.poll(() => pullQueryCalls("lazy")).toBeGreaterThan(before);
+    await expect
+      .poll(async () => Date.now() - ((await cachedAt("lazy"))?.getTime() ?? 0), {
+        timeout: 10_000,
+      })
+      .toBeLessThan(60_000);
+  });
+
+  test("a cache older than an hour is refetched before rendering", async ({ page, signInAs }) => {
+    await signInAs();
+    await connectRepo(page, "acme/lazy");
+    const repoUrl = page.url();
+    await ageCache("lazy", 120);
+    const before = await pullQueryCalls("lazy");
+    await page.goto(repoUrl);
+    await expect(page.getByText("Lazy PR")).toBeVisible();
+    expect(await pullQueryCalls("lazy")).toBe(before + 1);
+  });
 });
 
 test("sidebar shows PR and My Work counts from the cache", async ({ page, signInAs }) => {

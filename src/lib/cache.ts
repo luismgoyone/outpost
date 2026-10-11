@@ -1,41 +1,66 @@
 import "server-only";
 
 import { and, eq, inArray, min } from "drizzle-orm";
+import { after } from "next/server";
 
 import { getDb } from "@/db";
 import { statsCache, type Repo } from "@/db/schema";
 
-import { isFresh, type CacheKey } from "./cache-policy";
+import { cacheState, type CacheKey } from "./cache-policy";
 
 /**
  * Read-through cache for GitHub data, stored in Postgres so it's shared by every server
- * instance. Fresh rows are served as-is; stale or missing rows are refetched. If GitHub
- * fails and an older copy exists, the older copy is served instead of an error.
+ * instance. Fresh rows are served as-is. Stale rows (under an hour old) are served too, and
+ * refetched after the response. Missing or older rows are refetched first. If GitHub fails
+ * and an older copy exists, the older copy is served instead of an error.
  */
 export async function cached<T>(repo: Repo, key: CacheKey, load: () => Promise<T>): Promise<T> {
-  const db = getDb();
-  const [row] = await db
+  const [row] = await getDb()
     .select()
     .from(statsCache)
     .where(and(eq(statsCache.repoId, repo.id), eq(statsCache.key, key)))
     .limit(1);
 
-  if (row && isFresh(row.fetchedAt, new Date())) return row.data as T;
+  const state = row ? cacheState(row.fetchedAt, new Date()) : "expired";
+  if (row && state === "fresh") return row.data as T;
+  if (row && state === "stale") {
+    refreshAfterResponse(repo, key, load);
+    return row.data as T;
+  }
 
   try {
-    const data = await load();
-    await db
-      .insert(statsCache)
-      .values({ repoId: repo.id, key, data: data as object, fetchedAt: new Date() })
-      .onConflictDoUpdate({
-        target: [statsCache.repoId, statsCache.key],
-        set: { data: data as object, fetchedAt: new Date() },
-      });
-    return data;
+    return await refresh(repo, key, load);
   } catch (error) {
     if (row) return row.data as T;
     throw error;
   }
+}
+
+async function refresh<T>(repo: Repo, key: CacheKey, load: () => Promise<T>): Promise<T> {
+  const data = await load();
+  await getDb()
+    .insert(statsCache)
+    .values({ repoId: repo.id, key, data: data as object, fetchedAt: new Date() })
+    .onConflictDoUpdate({
+      target: [statsCache.repoId, statsCache.key],
+      set: { data: data as object, fetchedAt: new Date() },
+    });
+  return data;
+}
+
+/** Background refreshes in flight in this instance, so ten views don't start ten fetches. */
+const refreshing = new Set<string>();
+
+function refreshAfterResponse<T>(repo: Repo, key: CacheKey, load: () => Promise<T>): void {
+  const id = `${repo.id}:${key}`;
+  if (refreshing.has(id)) return;
+  refreshing.add(id);
+  after(() =>
+    refresh(repo, key, load)
+      // The stale copy stays in place; the next view tries again.
+      .catch((error) => console.error(`Background refresh failed for ${id}`, error))
+      .finally(() => refreshing.delete(id)),
+  );
 }
 
 /** Every cached payload of one kind, fresh or not. For cheap summaries like sidebar badges. */

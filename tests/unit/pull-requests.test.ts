@@ -43,6 +43,16 @@ describe("toCiStatus", () => {
 });
 
 describe("mapPullRequests", () => {
+  it("keeps one copy of a PR that appears on two pages", () => {
+    const result = mapPullRequests({
+      repository: {
+        open: { nodes: [node({ number: 7 }), node({ number: 8 }), node({ number: 7 })] },
+        merged: { nodes: [] },
+      },
+    });
+    expect(result.open.map((pr) => pr.number)).toEqual([7, 8]);
+  });
+
   it("maps open and merged PRs with CI status from the last commit", () => {
     const result = mapPullRequests({
       repository: {
