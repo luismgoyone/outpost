@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { auth, isOwner, signOut } from "@/auth";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
+import { MobileNav } from "@/components/shell/mobile-nav";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
 import { SyncControl } from "@/components/shell/sync-control";
 import { oldestSync, readAllCached } from "@/lib/cache";
@@ -40,75 +41,78 @@ export default async function OwnerLayout({ children }: LayoutProps<"/">) {
     counts["/my-work"] = buildMyWork(snapshots, session?.user?.login, now).attentionCount;
   }
 
+  const sidebar = (
+    <>
+      <Link href="/repositories" className="flex items-center gap-2.5 px-1 py-1">
+        <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-sm">
+          <Box aria-hidden className="size-3.5" />
+        </span>
+        <span className="flex flex-col">
+          <span className="text-[15px] leading-none font-semibold tracking-[-0.01em]">Outpost</span>
+          <span className="text-muted-foreground mt-0.5 font-mono text-[10px]">Control Center</span>
+        </span>
+      </Link>
+
+      <div className="mt-5">
+        <SidebarNav counts={counts} />
+      </div>
+
+      <div className="mt-auto flex flex-col gap-3">
+        {repos.length > 0 && (
+          <div className="border-t pt-3">
+            <p className="text-subtle-foreground px-2 pb-1.5 font-mono text-[10px] tracking-wider uppercase">
+              Repositories
+            </p>
+            <ul aria-label="Sidebar repositories" className="flex flex-col gap-0.5">
+              {repos.slice(0, 8).map((repo) => (
+                <li key={repo.id}>
+                  <Link
+                    href={`/repositories/${repo.id}`}
+                    className="text-muted-foreground hover:bg-surface-hover/60 hover:text-foreground block truncate rounded-sm px-2.5 py-1 font-mono text-[11px]"
+                  >
+                    {repo.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {owner && session?.user && (
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
+            className="flex items-center gap-2 border-t px-1 pt-3"
+          >
+            <span className="bg-surface-hover text-muted-foreground flex size-6 items-center justify-center rounded-full font-mono text-[10px] uppercase">
+              {session.user.login?.slice(0, 2)}
+            </span>
+            <span className="truncate font-mono text-[11px]">{session.user.login}</span>
+            <button
+              type="submit"
+              aria-label="Sign out"
+              title="Sign out"
+              className="text-subtle-foreground hover:text-foreground hover:bg-surface-hover ml-auto rounded-sm p-1"
+            >
+              <LogOut aria-hidden className="size-3.5" />
+            </button>
+          </form>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="flex min-h-screen">
       <aside className="bg-panel sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r p-3 max-md:hidden">
-        <Link href="/repositories" className="flex items-center gap-2.5 px-1 py-1">
-          <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-sm">
-            <Box aria-hidden className="size-3.5" />
-          </span>
-          <span className="flex flex-col">
-            <span className="text-[15px] leading-none font-semibold tracking-[-0.01em]">
-              Outpost
-            </span>
-            <span className="text-muted-foreground mt-0.5 font-mono text-[10px]">
-              Control Center
-            </span>
-          </span>
-        </Link>
-
-        <div className="mt-5">
-          <SidebarNav counts={counts} />
-        </div>
-
-        <div className="mt-auto flex flex-col gap-3">
-          {repos.length > 0 && (
-            <div className="border-t pt-3">
-              <p className="text-subtle-foreground px-2 pb-1.5 font-mono text-[10px] tracking-wider uppercase">
-                Repositories
-              </p>
-              <ul aria-label="Sidebar repositories" className="flex flex-col gap-0.5">
-                {repos.slice(0, 8).map((repo) => (
-                  <li key={repo.id}>
-                    <Link
-                      href={`/repositories/${repo.id}`}
-                      className="text-muted-foreground hover:bg-surface-hover/60 hover:text-foreground block truncate rounded-sm px-2.5 py-1 font-mono text-[11px]"
-                    >
-                      {repo.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {owner && session?.user && (
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-              className="flex items-center gap-2 border-t px-1 pt-3"
-            >
-              <span className="bg-surface-hover text-muted-foreground flex size-6 items-center justify-center rounded-full font-mono text-[10px] uppercase">
-                {session.user.login?.slice(0, 2)}
-              </span>
-              <span className="truncate font-mono text-[11px]">{session.user.login}</span>
-              <button
-                type="submit"
-                aria-label="Sign out"
-                title="Sign out"
-                className="text-subtle-foreground hover:text-foreground hover:bg-surface-hover ml-auto rounded-sm p-1"
-              >
-                <LogOut aria-hidden className="size-3.5" />
-              </button>
-            </form>
-          )}
-        </div>
+        {sidebar}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="bg-background/80 sticky top-0 z-10 flex h-11 items-center gap-3 border-b px-4 backdrop-blur">
+          <MobileNav>{sidebar}</MobileNav>
           <Breadcrumbs />
           {owner && <SyncControl label={syncedLabel(lastSync, now)} action={syncNowAction} />}
         </header>

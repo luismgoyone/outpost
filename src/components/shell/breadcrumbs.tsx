@@ -11,11 +11,15 @@ export function Breadcrumbs() {
   const isSectionRoot = section?.href === pathname;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs">
-      <span className="text-muted-foreground">Outpost</span>
+    <nav
+      aria-label="Breadcrumb"
+      className="flex min-w-0 items-center gap-1.5 text-xs whitespace-nowrap"
+    >
+      {/* On phones the header is tight, so only the section shows. */}
+      <span className="text-muted-foreground max-sm:hidden">Outpost</span>
       {section && (
         <>
-          <span aria-hidden className="text-subtle-foreground">
+          <span aria-hidden className="text-subtle-foreground max-sm:hidden">
             /
           </span>
           {isSectionRoot ? (

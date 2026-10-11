@@ -173,7 +173,10 @@ export default async function RepoPage(props: PageProps<"/repositories/[id]">) {
         )}
       </section>
 
-      <nav aria-label="Repository sections" className="-mb-2 flex gap-5 border-b">
+      <nav
+        aria-label="Repository sections"
+        className="-mb-2 flex [scrollbar-width:none] gap-5 overflow-x-auto border-b"
+      >
         {TABS.map((t) => (
           <Link
             key={t.id}
@@ -182,7 +185,7 @@ export default async function RepoPage(props: PageProps<"/repositories/[id]">) {
             }
             aria-current={tab === t.id ? "page" : undefined}
             className={cn(
-              "-mb-px border-b-2 pb-2.5 text-sm transition-colors",
+              "-mb-px shrink-0 border-b-2 pb-2.5 text-sm whitespace-nowrap transition-colors",
               tab === t.id
                 ? "border-primary text-foreground font-medium"
                 : "text-muted-foreground hover:text-foreground border-transparent",

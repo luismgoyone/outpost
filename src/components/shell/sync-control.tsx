@@ -20,7 +20,7 @@ function SyncState({ label }: { label: string }) {
     <>
       <span
         role="status"
-        className="text-muted-foreground bg-panel flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[11px]"
+        className="text-muted-foreground bg-panel flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[11px] whitespace-nowrap"
       >
         <span
           aria-hidden
