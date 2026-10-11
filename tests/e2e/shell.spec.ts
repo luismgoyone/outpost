@@ -32,7 +32,7 @@ test("every section requires sign-in", async ({ page }) => {
     "/deployments",
   ]) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/api\/auth\/signin/);
+    await expect(page).toHaveURL(/\/sign-in\?callbackUrl=/);
   }
 });
 

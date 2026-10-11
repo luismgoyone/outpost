@@ -10,6 +10,8 @@ declare module "next-auth" {
 /** Owner-only auth. Clients never sign in; they use share links. */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [GitHub],
+  // Styled pages instead of Auth.js defaults; failures come back as /sign-in?error=…
+  pages: { signIn: "/sign-in", error: "/sign-in" },
   callbacks: {
     signIn({ profile }) {
       return isOwner(profile?.login);

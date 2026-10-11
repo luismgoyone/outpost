@@ -11,7 +11,7 @@ import { auth, isOwner } from "@/auth";
 export async function requireOwner(callbackUrl = "/repositories") {
   const session = await auth();
   if (!session?.user) {
-    redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    redirect(`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
   if (!isOwner(session.user.login)) redirect("/?error=not-owner");
   return session;
