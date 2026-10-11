@@ -3,8 +3,8 @@ import { connectRepo, expect, slowNextFetch, test } from "./support/fixtures";
 test.describe("repositories", () => {
   test("requires sign-in", async ({ page }) => {
     await page.goto("/repositories");
-    await expect(page).toHaveURL(/\/api\/auth\/signin/);
-    await expect(page.getByRole("button", { name: /sign in with github/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in\?callbackUrl=/);
+    await expect(page.getByRole("button", { name: "Continue with GitHub" })).toBeVisible();
   });
 
   test("rejects a signed-in user who isn't the owner", async ({ page, signInAs }) => {

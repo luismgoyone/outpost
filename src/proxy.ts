@@ -9,7 +9,7 @@ import { auth, isOwner } from "@/auth";
 export const proxy = auth((request) => {
   const { nextUrl } = request;
   if (!request.auth?.user) {
-    const signIn = new URL("/api/auth/signin", nextUrl.origin);
+    const signIn = new URL("/sign-in", nextUrl.origin);
     signIn.searchParams.set("callbackUrl", `${nextUrl.pathname}${nextUrl.search}`);
     return NextResponse.redirect(signIn);
   }
