@@ -17,6 +17,7 @@
  *           production deploy to redeploy. POST /v13/deployments stands in for Vercel.
  * GET /__writes lists the write requests (re-runs, comments, redeploys) received so far.
  *   shared → client share links
+ *   scratch → disconnect
  * GET /__calls?repo=name returns how many times a repo's PR query hit this server.
  * GET /__slow?repo=name&ms=1000 makes that repo's next PR query slow (one shot).
  * "legacy" always fails its GraphQL query, to exercise per-repo error handling.
@@ -49,6 +50,7 @@ const repositories = [
   { id: 16, name: "tickets", full_name: "acme/tickets", owner, private: false },
   { id: 17, name: "flaky", full_name: "acme/flaky", owner, private: false },
   { id: 18, name: "shared", full_name: "acme/shared", owner, private: false },
+  { id: 12, name: "scratch", full_name: "acme/scratch", owner, private: false },
 ];
 
 /** The last message posted to the fake Slack webhook. */
@@ -480,7 +482,16 @@ const server = createServer(async (req, res) => {
   if (route === "GET /app")
     return send(res, 200, { id: 1, slug: "outpost-e2e", name: "Outpost E2E" });
   if (route === "GET /app/installations") {
-    return send(res, 200, [{ id: INSTALLATION_ID, account: owner }]);
+    return send(res, 200, [
+      {
+        id: INSTALLATION_ID,
+        account: { ...owner, type: "Organization" },
+        repository_selection: "selected",
+        html_url: `https://github.com/organizations/acme/settings/installations/${INSTALLATION_ID}`,
+        // No deployments/checks/statuses, so Settings shows what's missing.
+        permissions: { metadata: "read", pull_requests: "read", contents: "read", actions: "read" },
+      },
+    ]);
   }
   if (route === `POST /app/installations/${INSTALLATION_ID}/access_tokens`) {
     return send(res, 201, {

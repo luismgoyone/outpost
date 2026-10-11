@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 
+import { recordActivity } from "@/lib/activity";
 import { invalidate } from "@/lib/cache";
 import { CACHE_INVALIDATING_EVENTS, verifyWebhookSignature } from "@/lib/github/webhook-signature";
 import { findConnectedRepo } from "@/lib/repos";
@@ -18,9 +19,15 @@ export async function POST(request: Request) {
   }
 
   const event = request.headers.get("x-github-event") ?? "";
-  if (event === "ping") return Response.json({ ok: true });
-  if (!CACHE_INVALIDATING_EVENTS.has(event))
+  // Settings shows the last delivery, so the owner can tell the webhook is actually wired up.
+  if (event === "ping") {
+    await recordActivity("webhook", "ping");
+    return Response.json({ ok: true });
+  }
+  if (!CACHE_INVALIDATING_EVENTS.has(event)) {
+    await recordActivity("webhook", `${event} (ignored)`);
     return Response.json({ ignored: event }, { status: 202 });
+  }
 
   let payload: { repository?: { name?: string; owner?: { login?: string } } };
   try {
@@ -35,5 +42,6 @@ export async function POST(request: Request) {
 
   await invalidate([repo.id]);
   revalidatePath("/", "layout");
+  await recordActivity("webhook", `${event} · ${repo.owner}/${repo.name}`);
   return Response.json({ invalidated: `${repo.owner}/${repo.name}` }, { status: 202 });
 }

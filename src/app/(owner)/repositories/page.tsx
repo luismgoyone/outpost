@@ -2,6 +2,7 @@ import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { DisconnectButton } from "@/components/disconnect-button";
 import { RepoChip } from "@/components/repo-chip";
 import { PageHeader } from "@/components/shell/page-header";
 import { Panel, PanelEmpty } from "@/components/shell/panel";
@@ -12,7 +13,7 @@ import { listInstallableRepos } from "@/lib/github/installations";
 import { requireOwner } from "@/lib/owner";
 import { listConnectedRepos } from "@/lib/repos";
 
-import { connectRepoAction } from "./actions";
+import { connectRepoAction, disconnectRepoAction } from "./actions";
 import { ConnectButton } from "./connect-button";
 
 export const metadata: Metadata = { title: "Repositories · Outpost" };
@@ -63,6 +64,11 @@ export default async function RepositoriesPage() {
                   GitHub
                   <ExternalLink aria-hidden className="size-3" />
                 </a>
+                <DisconnectButton
+                  id={repo.id}
+                  fullName={`${repo.owner}/${repo.name}`}
+                  action={disconnectRepoAction}
+                />
               </li>
             ))}
           </ul>

@@ -29,6 +29,13 @@
       "when": 1790752561191,
       "tag": "0003_brave_pestilence",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791731009775,
+      "tag": "0004_pale_wallow",
+      "breakpoints": true
     }
   ]
 }

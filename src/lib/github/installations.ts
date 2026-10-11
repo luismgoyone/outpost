@@ -29,3 +29,31 @@ export async function listInstallableRepos(): Promise<InstallableRepo[]> {
 
   return result.sort((a, b) => a.fullName.localeCompare(b.fullName));
 }
+
+export type InstallationSummary = {
+  id: number;
+  account: string;
+  accountType: string;
+  /** "all" repos, or only "selected" ones. */
+  repositorySelection: string;
+  permissions: Record<string, string | undefined>;
+  /** Where the owner changes repo access and accepts new permissions. */
+  settingsUrl: string | null;
+};
+
+/** The App's installations with what each one granted, for Settings. */
+export async function listInstallations(): Promise<InstallationSummary[]> {
+  const result: InstallationSummary[] = [];
+  for await (const { installation } of getGitHubApp().eachInstallation.iterator()) {
+    const account = installation.account as { login?: string; slug?: string; type?: string } | null;
+    result.push({
+      id: installation.id,
+      account: account?.login ?? account?.slug ?? `#${installation.id}`,
+      accountType: account?.type ?? "Organization",
+      repositorySelection: installation.repository_selection,
+      permissions: installation.permissions as Record<string, string | undefined>,
+      settingsUrl: installation.html_url ?? null,
+    });
+  }
+  return result;
+}
