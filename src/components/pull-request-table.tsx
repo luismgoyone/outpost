@@ -3,6 +3,7 @@ import { GitMerge, GitPullRequest, GitPullRequestDraft } from "lucide-react";
 import { CiStatusBadge } from "@/components/ci-status-badge";
 import { PanelEmpty } from "@/components/shell/panel";
 import { StatusBadge } from "@/components/status-badge";
+import { LinearLinks } from "@/components/linear-links";
 import {
   Table,
   TableBody,
@@ -63,6 +64,7 @@ export function PullRequestTable({
                     {pr.title}
                   </a>
                   <span className="text-subtle-foreground font-mono text-[11px]">#{pr.number}</span>
+                  <LinearLinks pr={pr} />
                   {pr.isDraft && <StatusBadge tone="neutral" label="Draft" boxed />}
                 </div>
               </TableCell>

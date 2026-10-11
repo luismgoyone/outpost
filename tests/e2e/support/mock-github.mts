@@ -11,6 +11,8 @@
  *   cachey → cache + Sync button · infra → webhook invalidation · slowpoke → Connect loading state
  *   busy → 130 open PRs (pagination) · lazy → stale cache refreshed in the background
  *   palette → ⌘K command palette
+ *   tickets → Linear issue links
+ * POST /__slack stands in for a Slack incoming webhook; GET /__slack returns the last message.
  * GET /__calls?repo=name returns how many times a repo's PR query hit this server.
  * GET /__slow?repo=name&ms=1000 makes that repo's next PR query slow (one shot).
  * "legacy" always fails its GraphQL query, to exercise per-repo error handling.
@@ -40,7 +42,11 @@ const repositories = [
   { id: 13, name: "busy", full_name: "acme/busy", owner, private: false },
   { id: 14, name: "lazy", full_name: "acme/lazy", owner, private: false },
   { id: 15, name: "palette", full_name: "acme/palette", owner, private: false },
+  { id: 16, name: "tickets", full_name: "acme/tickets", owner, private: false },
 ];
+
+/** The last message posted to the fake Slack webhook. */
+let lastSlackMessage: Record<string, unknown> | undefined;
 
 /** PR-query calls per repo, so e2e tests can prove what the cache does. */
 const pullQueryCalls = new Map<string, number>();
@@ -337,6 +343,13 @@ const pullRequests: Record<string, { open: unknown[]; merged: unknown[] }> = {
     merged: [],
   },
   palette: { open: [pr(5, "Palette PR", "SUCCESS")], merged: [] },
+  tickets: {
+    open: [
+      pr(6, "ENG-42 Fix login redirect", "SUCCESS", { headRefName: "eng-42-login" }),
+      pr(7, "Use UTF-8 everywhere", "SUCCESS", { headRefName: "utf-8" }),
+    ],
+    merged: [],
+  },
   platform: { open: [], merged: [] },
   billing: {
     open: [
@@ -383,6 +396,11 @@ const server = createServer(async (req, res) => {
   const route = `${req.method} ${url.pathname}`;
 
   if (route === "GET /health") return send(res, 200, { ok: true });
+  if (route === "POST /__slack") {
+    lastSlackMessage = await readJson(req);
+    return send(res, 200, { ok: true });
+  }
+  if (route === "GET /__slack") return send(res, 200, lastSlackMessage ?? {});
   if (route === "GET /__slow") {
     armedDelays.set(url.searchParams.get("repo") ?? "", Number(url.searchParams.get("ms") ?? 1000));
     return send(res, 200, { ok: true });

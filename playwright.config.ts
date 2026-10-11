@@ -25,6 +25,9 @@ const appEnv = {
   AUTH_GITHUB_SECRET: "e2e",
   OWNER_GITHUB_LOGIN: E2E.ownerLogin,
   GITHUB_WEBHOOK_SECRET: E2E.webhookSecret,
+  CRON_SECRET: E2E.cronSecret,
+  SLACK_WEBHOOK_URL: `${mockGitHubUrl}/__slack`,
+  LINEAR_WORKSPACE: "acme-linear",
 };
 
 export default defineConfig({

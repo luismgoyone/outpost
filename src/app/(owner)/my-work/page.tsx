@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { Panel, PanelEmpty } from "@/components/shell/panel";
 import { StatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
+import { LinearLinks } from "@/components/linear-links";
 import { fetchAllPullRequests } from "@/lib/github/fetch-all-pull-requests";
 import { daysSince, formatAge } from "@/lib/github/pull-requests";
 import { buildMyWork, needsMyAction, type WorkItem } from "@/lib/my-work";
@@ -214,6 +215,7 @@ function WorkList({
                 {pr.title}
               </a>
               <span className="text-subtle-foreground font-mono text-[11px]">#{pr.number}</span>
+              <LinearLinks pr={pr} />
             </div>
             <span className="text-muted-foreground hidden font-mono text-[11px] md:inline">
               @{pr.author?.login ?? "ghost"}

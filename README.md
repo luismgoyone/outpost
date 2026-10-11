@@ -42,6 +42,26 @@ immediately. To refresh as soon as something changes, enable the GitHub App webh
    Check run, Status, Workflow run, Release, Deployment, Deployment status, Push.
 3. Set the same secret as `GITHUB_WEBHOOK_SECRET` in Vercel (Production) and redeploy.
 
+### Slack digest (optional)
+
+Every day at 01:00 UTC (09:00 in Manila/Singapore) Vercel Cron calls `/api/cron/digest`, which
+posts what needs you to Slack: review requests, your PRs with failing CI or requested changes,
+failing default branches, failed production deploys, stale PRs, and merged-but-unreleased work
+on release-tag repos.
+
+1. Create a Slack app with an **Incoming Webhook** for your channel and copy its URL.
+2. In Vercel (Production) set `SLACK_WEBHOOK_URL` to it, and `CRON_SECRET` to a random value
+   (`openssl rand -hex 32`). Vercel sends that secret with each cron call. Redeploy.
+3. Preview the message without posting it:
+   `curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/digest?dry=1`
+
+### Linear links (optional)
+
+Set `LINEAR_WORKSPACE` to your workspace slug (`linear.app/<slug>`) and PR lists link issue
+keys found in PR titles and branch names (`ENG-142`, `eng-142-fix-login`). Set
+`LINEAR_TEAM_KEYS` (e.g. `ENG,OPS`) to only match your teams' prefixes; without it Outpost
+skips common look-alikes such as `UTF-8` and `release-2`.
+
 ### End-to-end tests
 
 E2E tests never touch GitHub or your real database. They run the app against a mock GitHub
@@ -70,6 +90,10 @@ All of them are listed with comments in [`.env.example`](.env.example).
 | `VERCEL_TOKEN`                          | Optional, unused for now (deployments come from GitHub) |
 | `VERCEL_TEAM_ID`                        | Optional Vercel team ID                                 |
 | `DATABASE_URL`                          | Neon Postgres connection string                         |
+| `CRON_SECRET`                           | Optional. Authorizes Vercel Cron (Slack digest)         |
+| `SLACK_WEBHOOK_URL`                     | Optional. Slack incoming webhook for the daily digest   |
+| `LINEAR_WORKSPACE`                      | Optional. Linear workspace slug, enables issue links    |
+| `LINEAR_TEAM_KEYS`                      | Optional. Comma-separated Linear team prefixes          |
 
 ## Scripts
 

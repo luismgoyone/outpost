@@ -7,6 +7,7 @@ export const E2E = {
   authSecret: "e2e-only-secret-not-used-anywhere-else-0123456789",
   ownerLogin: "e2e-owner",
   webhookSecret: "e2e-webhook-secret",
+  cronSecret: "e2e-cron-secret",
 } as const;
 
 export const appUrl = `http://localhost:${E2E.appPort}`;

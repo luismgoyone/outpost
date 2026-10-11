@@ -31,6 +31,7 @@ import {
 import { listConnectedRepos } from "@/lib/repos";
 
 import { RepoSelect } from "@/components/repo-select";
+import { LinearLinks } from "@/components/linear-links";
 
 export const metadata: Metadata = { title: "Pull Requests · Outpost" };
 
@@ -178,6 +179,7 @@ export default async function PullRequestsPage(props: PageProps<"/pull-requests"
                         <span className="text-subtle-foreground font-mono text-[11px]">
                           #{pr.number}
                         </span>
+                        <LinearLinks pr={pr} />
                       </div>
                     </TableCell>
                     <TableCell className="hidden font-mono text-[11px] md:table-cell">
