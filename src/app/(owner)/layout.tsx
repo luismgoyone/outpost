@@ -112,7 +112,7 @@ export default async function OwnerLayout({ children }: LayoutProps<"/">) {
           <Breadcrumbs />
           {owner && <SyncControl label={syncedLabel(lastSync, now)} action={syncNowAction} />}
         </header>
-        <main className="flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 2xl:px-8">
+        <main className="@container flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 2xl:px-8">
           {children}
         </main>
       </div>

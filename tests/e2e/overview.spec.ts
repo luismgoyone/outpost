@@ -32,3 +32,26 @@ test("Overview shows attention tiles and repo health cards", async ({ page, sign
     page.getByRole("list", { name: "Repository health" }).getByRole("listitem"),
   ).toHaveCount(1);
 });
+
+test("repo cards fill the row on very wide screens", async ({ page, signInAs }) => {
+  await signInAs();
+  for (const r of [
+    "acme/billing",
+    "acme/mobile",
+    "acme/api",
+    "acme/storefront",
+    "acme/platform",
+    "acme/marketing",
+  ]) {
+    await connectRepo(page, r);
+  }
+  await page.setViewportSize({ width: 3900, height: 1200 });
+  await page.goto("/overview");
+  const cards = page.getByRole("list", { name: "Repository health" }).getByRole("listitem");
+  const listBox = await page.getByRole("list", { name: "Repository health" }).boundingBox();
+  const boxes = await Promise.all((await cards.all()).slice(0, 6).map((c) => c.boundingBox()));
+  // Six columns: the first six cards share one row and the row spans the full width.
+  expect(new Set(boxes.map((b) => Math.round(b!.y))).size).toBe(1);
+  const last = boxes[5]!;
+  expect(Math.abs(last.x + last.width - (listBox!.x + listBox!.width))).toBeLessThan(2);
+});

@@ -73,7 +73,10 @@ export default async function OverviewPage(props: PageProps<"/overview">) {
         </div>
       )}
 
-      <section aria-label="Attention" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section
+        aria-label="Attention"
+        className="grid grid-cols-1 gap-3 @min-[36rem]:grid-cols-2 @min-[76rem]:grid-cols-4"
+      >
         <AttentionTile
           title="Stale PRs (>7d)"
           tag="Highest risk"
@@ -170,7 +173,7 @@ export default async function OverviewPage(props: PageProps<"/overview">) {
         ) : (
           <ul
             aria-label="Repository health"
-            className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-3"
+            className="grid grid-cols-1 gap-3 @min-[36rem]:grid-cols-2 @min-[56rem]:grid-cols-3 @min-[76rem]:grid-cols-4 @min-[96rem]:grid-cols-5 @min-[116rem]:grid-cols-6"
           >
             {visibleRepos.map((r) => (
               <RepoCard
