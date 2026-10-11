@@ -7,7 +7,7 @@ import { useFormStatus } from "react-dom";
 /** Header sync indicator + button. Shows a spinner and "Syncing…" while the action runs. */
 export function SyncControl({ label, action }: { label: string; action: () => Promise<void> }) {
   return (
-    <form action={action} className="ml-auto flex items-center gap-2">
+    <form action={action} className="flex items-center gap-2">
       <SyncState label={label} />
     </form>
   );
