@@ -63,15 +63,18 @@ test.describe("repositories", () => {
   });
 });
 
-test("repo pages don't leak repo names to visitors", async ({ page, signInAs, context }) => {
+test("repo pages don't leak repo names to visitors", async ({ page, signInAs, playwright }) => {
   await signInAs();
   await connectRepo(page, "acme/docs");
   const repoUrl = page.url();
 
-  await context.clearCookies();
-  const response = await page.request.get(repoUrl, { maxRedirects: 0 });
+  // A separate request context with no cookies. Clearing the page's cookies raced with
+  // in-flight responses re-setting the (rolling) session cookie, which made this flaky.
+  const visitor = await playwright.request.newContext();
+  const response = await visitor.get(repoUrl, { maxRedirects: 0 });
   expect(response.status()).toBeGreaterThanOrEqual(300);
   expect(await response.text()).not.toContain("acme/docs");
+  await visitor.dispose();
 });
 
 test("the Connect button shows a loading state while connecting", async ({ page, signInAs }) => {
