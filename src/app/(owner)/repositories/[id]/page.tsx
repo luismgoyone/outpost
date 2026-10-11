@@ -12,6 +12,7 @@ import { PullRequestTable } from "@/components/pull-request-table";
 import { ReleaseCard } from "@/components/release-card";
 import { Panel, PanelEmpty } from "@/components/shell/panel";
 import { ShippingBadge, UnreleasedNote } from "@/components/shipping-badge";
+import { StatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { WorkflowTable } from "@/components/workflow-table";
 import type { Repo } from "@/db/schema";
@@ -23,9 +24,11 @@ import { loadPullRequests } from "@/lib/github/fetch-pull-requests";
 import { fetchWorkflows } from "@/lib/github/fetch-workflows";
 import { requireOwner } from "@/lib/owner";
 import { getConnectedRepo } from "@/lib/repos";
+import { listShareLinks } from "@/lib/share/links";
 
 import { rerunWorkflowAction } from "../../write-actions";
-import { setShippingAction } from "./actions";
+import { revokeShareLinkAction, setShippingAction } from "./actions";
+import { ShareForm } from "./share-form";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,6 +37,7 @@ const TABS = [
   { id: "workflows", label: "Workflows" },
   { id: "deployments", label: "Deployments" },
   { id: "releases", label: "Releases" },
+  { id: "share", label: "Share" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -240,6 +244,7 @@ export default async function RepoPage(props: PageProps<"/repositories/[id]">) {
       {tab === "workflows" && <WorkflowsTab repo={repo} now={now} />}
       {tab === "deployments" && <DeploymentsTab repo={repo} now={now} />}
       {tab === "releases" && <ReleasesTab repo={repo} />}
+      {tab === "share" && <ShareTab repo={repo} />}
     </>
   );
 }
@@ -318,5 +323,50 @@ async function ReleasesTab({ repo }: { repo: Repo }) {
         <ReleaseCard key={item.release.id} item={item} />
       ))}
     </ol>
+  );
+}
+
+async function ShareTab({ repo }: { repo: Repo }) {
+  const links = await listShareLinks(repo.id);
+  const active = links.filter((l) => !l.revokedAt);
+  return (
+    <Panel title="Share links" count={active.length} meta="read-only, no sign-in">
+      <p className="text-muted-foreground border-b px-4 py-3 text-[13px]">
+        Anyone with a link sees this repo&apos;s open PRs, recent merges, CI health and latest
+        release. Nothing else in Outpost. Revoke a link to turn it off right away.
+      </p>
+      <ShareForm repoId={repo.id} />
+      {links.length === 0 ? (
+        <PanelEmpty>No share links yet.</PanelEmpty>
+      ) : (
+        <ul aria-label="Share links" className="divide-y border-t">
+          {links.map((link) => (
+            <li key={link.id} className="flex h-10 items-center gap-3 px-4">
+              <span className="text-[13px]">{link.label ?? "Untitled link"}</span>
+              <span className="text-subtle-foreground font-mono text-[11px]">
+                created {link.createdAt.toISOString().slice(0, 10)}
+              </span>
+              <span className="ml-auto">
+                {link.revokedAt ? (
+                  <StatusBadge tone="neutral" label="Revoked" />
+                ) : (
+                  <form action={revokeShareLinkAction}>
+                    <input type="hidden" name="repoId" value={repo.id} />
+                    <input type="hidden" name="id" value={link.id} />
+                    <button
+                      type="submit"
+                      aria-label={`Revoke ${link.label ?? "untitled link"}`}
+                      className={buttonVariants({ size: "sm", variant: "ghost" })}
+                    >
+                      Revoke
+                    </button>
+                  </form>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 }
