@@ -10,6 +10,7 @@
  *              and repo detail (workflow runs, one deployment); docs → Actions permission denied
  *   cachey → cache + Sync button · infra → webhook invalidation · slowpoke → Connect loading state
  *   busy → 130 open PRs (pagination) · lazy → stale cache refreshed in the background
+ *   palette → ⌘K command palette
  * GET /__calls?repo=name returns how many times a repo's PR query hit this server.
  * GET /__slow?repo=name&ms=1000 makes that repo's next PR query slow (one shot).
  * "legacy" always fails its GraphQL query, to exercise per-repo error handling.
@@ -38,6 +39,7 @@ const repositories = [
   { id: 11, name: "slowpoke", full_name: "acme/slowpoke", owner, private: false },
   { id: 13, name: "busy", full_name: "acme/busy", owner, private: false },
   { id: 14, name: "lazy", full_name: "acme/lazy", owner, private: false },
+  { id: 15, name: "palette", full_name: "acme/palette", owner, private: false },
 ];
 
 /** PR-query calls per repo, so e2e tests can prove what the cache does. */
@@ -334,6 +336,7 @@ const pullRequests: Record<string, { open: unknown[]; merged: unknown[] }> = {
     open: Array.from({ length: 130 }, (_, i) => pr(1000 + i, `Busy PR ${i + 1}`, "SUCCESS")),
     merged: [],
   },
+  palette: { open: [pr(5, "Palette PR", "SUCCESS")], merged: [] },
   platform: { open: [], merged: [] },
   billing: {
     open: [

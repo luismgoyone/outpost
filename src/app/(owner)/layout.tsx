@@ -4,6 +4,7 @@ import Link from "next/link";
 import { auth, isOwner, signOut } from "@/auth";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { MobileNav } from "@/components/shell/mobile-nav";
+import { CommandPalette } from "@/components/shell/command-palette";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
 import { SyncControl } from "@/components/shell/sync-control";
 import { oldestSync, readAllCached } from "@/lib/cache";
@@ -114,7 +115,23 @@ export default async function OwnerLayout({ children }: LayoutProps<"/">) {
         <header className="bg-background/80 sticky top-0 z-10 flex h-11 items-center gap-3 border-b px-4 backdrop-blur">
           <MobileNav>{sidebar}</MobileNav>
           <Breadcrumbs />
-          {owner && <SyncControl label={syncedLabel(lastSync, now)} action={syncNowAction} />}
+          {owner && (
+            <>
+              <CommandPalette
+                repos={repos.map((r) => ({ id: r.id, fullName: `${r.owner}/${r.name}` }))}
+                pulls={snapshots.flatMap((s) =>
+                  s.open.map((pr) => ({
+                    repo: s.repoName,
+                    number: pr.number,
+                    title: pr.title,
+                    url: pr.url,
+                  })),
+                )}
+                syncAction={syncNowAction}
+              />
+              <SyncControl label={syncedLabel(lastSync, now)} action={syncNowAction} />
+            </>
+          )}
         </header>
         <main className="@container flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 2xl:px-8">
           {children}
