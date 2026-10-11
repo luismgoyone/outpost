@@ -16,6 +16,7 @@
  *   flaky → write actions: failing workflows (re-run ok / 403), my PR to nudge, failed Vercel
  *           production deploy to redeploy. POST /v13/deployments stands in for Vercel.
  * GET /__writes lists the write requests (re-runs, comments, redeploys) received so far.
+ *   shared → client share links
  * GET /__calls?repo=name returns how many times a repo's PR query hit this server.
  * GET /__slow?repo=name&ms=1000 makes that repo's next PR query slow (one shot).
  * "legacy" always fails its GraphQL query, to exercise per-repo error handling.
@@ -47,6 +48,7 @@ const repositories = [
   { id: 15, name: "palette", full_name: "acme/palette", owner, private: false },
   { id: 16, name: "tickets", full_name: "acme/tickets", owner, private: false },
   { id: 17, name: "flaky", full_name: "acme/flaky", owner, private: false },
+  { id: 18, name: "shared", full_name: "acme/shared", owner, private: false },
 ];
 
 /** The last message posted to the fake Slack webhook. */
@@ -396,6 +398,7 @@ const pullRequests: Record<string, { open: unknown[]; merged: unknown[] }> = {
     ],
     merged: [],
   },
+  shared: { open: [pr(10, "Shared PR", "SUCCESS")], merged: [] },
   platform: { open: [], merged: [] },
   billing: {
     open: [

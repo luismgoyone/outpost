@@ -16,8 +16,9 @@ fast, dark dashboard:
 
 Outpost is for one person: the owner. It is not a team tool and not client-facing.
 
-> **Later:** a client-facing, read-only share link for a single repo (issue #3). It stays out
-> of scope until the owner experience is done.
+> **Share links (#3):** the owner can give a client a read-only link to one repo
+> (`/s/<token>`): open PRs, recent merges, CI health and latest release, no sign-in. Only the
+> token's hash is stored; revoked and unknown tokens both 404.
 
 ## Design
 
@@ -87,6 +88,5 @@ The UI follows the **Engineered Precision** design system (Google Stitch project
 - Actions from Outpost: re-run CI, retry deploys, nudge reviewers (needs write permissions) (#15)
 - Alerts and integrations: Slack digests and alert rules, Linear ticket links (#16)
 - ⌘K command palette (#16)
-- Client-facing read-only share link (#3)
 
 Each milestone is tracked as a GitHub issue.
