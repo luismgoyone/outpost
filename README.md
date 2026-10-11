@@ -6,9 +6,10 @@ Your personal engineering control center. Connect your GitHub repos, and Outpost
 everything that needs you in one dense, dark dashboard: PRs waiting on your review, your own
 PRs, failing CI, stale PRs, deployments and preview links, and releases across every repo.
 
-![Outpost screenshot](docs/images/screenshot.png)
+![Outpost's Overview screen: attention tiles for stale PRs, failing CI, review queue and failed deployments, above a grid of repository health cards](docs/images/screenshot.png)
 
-> Screenshot coming soon. See [docs/SPEC.md](docs/SPEC.md) for the product spec and milestones.
+<sub>Overview, rendered from the e2e mock data. See [docs/SPEC.md](docs/SPEC.md) for the
+product spec and milestones.</sub>
 
 ## Stack
 
