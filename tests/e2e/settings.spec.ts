@@ -49,7 +49,8 @@ test("a repo can be disconnected after confirming", async ({ page, signInAs }) =
   await signInAs();
   await connectRepo(page, "acme/scratch");
   await page.goto("/settings");
-  const list = page.getByRole("list", { name: "Settings repositories" });
+  // The panel, not the list: the list is replaced by an empty state when the last repo goes.
+  const list = page.getByRole("region", { name: "Connected repositories" });
   await expect(list).toContainText("acme/scratch");
 
   await page.getByRole("button", { name: "Disconnect acme/scratch" }).click();
@@ -64,7 +65,7 @@ test("a repo can be disconnected after confirming", async ({ page, signInAs }) =
   await expect(
     page.getByRole("button", { name: "Connect acme/scratch", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("list", { name: "Sidebar repositories" })).not.toContainText(
-    "scratch",
+  await expect(page.getByRole("complementary").getByRole("link", { name: "scratch" })).toHaveCount(
+    0,
   );
 });
