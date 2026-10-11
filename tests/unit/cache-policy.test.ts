@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { CACHE_TTL_MS, isFresh, syncedLabel } from "@/lib/cache-policy";
+import {
+  CACHE_TTL_MS,
+  cacheState,
+  isFresh,
+  SERVE_STALE_FOR_MS,
+  syncedLabel,
+} from "@/lib/cache-policy";
 
 const now = new Date("2026-09-29T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -10,6 +16,13 @@ describe("cache policy", () => {
     expect(isFresh(ago(CACHE_TTL_MS - 1), now)).toBe(true);
     expect(isFresh(ago(CACHE_TTL_MS), now)).toBe(false);
     expect(isFresh(ago(1000), now, 500)).toBe(false);
+  });
+
+  it("serves stale copies for up to an hour, then refetches first", () => {
+    expect(cacheState(ago(CACHE_TTL_MS - 1), now)).toBe("fresh");
+    expect(cacheState(ago(CACHE_TTL_MS), now)).toBe("stale");
+    expect(cacheState(ago(SERVE_STALE_FOR_MS - 1), now)).toBe("stale");
+    expect(cacheState(ago(SERVE_STALE_FOR_MS), now)).toBe("expired");
   });
 
   it.each([

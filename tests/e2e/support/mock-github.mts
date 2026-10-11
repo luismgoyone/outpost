@@ -9,6 +9,7 @@
  *   platform → Releases (latest + previous + old release, a draft, notes with unsafe HTML/links)
  *              and repo detail (workflow runs, one deployment); docs → Actions permission denied
  *   cachey → cache + Sync button · infra → webhook invalidation · slowpoke → Connect loading state
+ *   busy → 130 open PRs (pagination) · lazy → stale cache refreshed in the background
  * GET /__calls?repo=name returns how many times a repo's PR query hit this server.
  * GET /__slow?repo=name&ms=1000 makes that repo's next PR query slow (one shot).
  * "legacy" always fails its GraphQL query, to exercise per-repo error handling.
@@ -35,6 +36,8 @@ const repositories = [
   { id: 9, name: "cachey", full_name: "acme/cachey", owner, private: false },
   { id: 10, name: "infra", full_name: "acme/infra", owner, private: false },
   { id: 11, name: "slowpoke", full_name: "acme/slowpoke", owner, private: false },
+  { id: 13, name: "busy", full_name: "acme/busy", owner, private: false },
+  { id: 14, name: "lazy", full_name: "acme/lazy", owner, private: false },
 ];
 
 /** PR-query calls per repo, so e2e tests can prove what the cache does. */
@@ -326,6 +329,11 @@ const pullRequests: Record<string, { open: unknown[]; merged: unknown[] }> = {
   cachey: { open: [pr(1, "Cached PR", "SUCCESS")], merged: [] },
   infra: { open: [pr(2, "Infra PR", "SUCCESS")], merged: [] },
   slowpoke: { open: [pr(3, "Slow PR", "SUCCESS")], merged: [] },
+  lazy: { open: [pr(4, "Lazy PR", "SUCCESS")], merged: [] },
+  busy: {
+    open: Array.from({ length: 130 }, (_, i) => pr(1000 + i, `Busy PR ${i + 1}`, "SUCCESS")),
+    merged: [],
+  },
   platform: { open: [], merged: [] },
   billing: {
     open: [
@@ -426,12 +434,27 @@ const server = createServer(async (req, res) => {
   if (route === "POST /graphql") {
     const { query, variables } = (await readJson(req)) as {
       query?: string;
-      variables?: { name?: string };
+      variables?: { name?: string; openCount?: number; count?: number; after?: string };
     };
     if (variables?.name === "legacy") {
       return send(res, 200, {
         data: { repository: null },
         errors: [{ type: "FORBIDDEN", message: "Resource not accessible by integration" }],
+      });
+    }
+    // Open PRs page through with numeric cursors ("100" = start after the 100th).
+    const page = (all: unknown[], count = 100, after = "0") => {
+      const start = Number(after);
+      const end = start + count;
+      return {
+        pageInfo: { hasNextPage: end < all.length, endCursor: String(end) },
+        nodes: all.slice(start, end),
+      };
+    };
+    if (query?.includes("RepoOpenPullRequestsPage")) {
+      const all = pullRequests[variables?.name ?? ""]?.open ?? [];
+      return send(res, 200, {
+        data: { repository: { open: page(all, variables?.count, variables?.after) } },
       });
     }
     if (query?.includes("RepoReleases")) {
@@ -457,7 +480,7 @@ const server = createServer(async (req, res) => {
           ? {
               ...repoMeta(variables?.name ?? ""),
               defaultBranchRef: defaultBranchRef(variables?.name ?? ""),
-              open: { nodes: data.open },
+              open: page(data.open, variables?.openCount),
               merged: { nodes: data.merged },
             }
           : null,

@@ -68,3 +68,11 @@ test.describe("pull requests across repos", () => {
     await expect(page.getByRole("region", { name: "Open pull requests" })).toBeVisible();
   });
 });
+
+test("repos with more than 100 open PRs show all of them", async ({ page, signInAs }) => {
+  await signInAs();
+  await connectRepo(page, "acme/busy");
+  const tabs = page.getByRole("navigation", { name: "Repository sections" });
+  await expect(tabs.getByRole("link", { name: /Pull Requests\s*130/ })).toBeVisible();
+  await expect(page.getByText("Busy PR 130", { exact: true })).toBeVisible();
+});

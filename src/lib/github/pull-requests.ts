@@ -144,6 +144,10 @@ export const PULL_REQUESTS_QUERY = /* GraphQL */ `
         first: $openCount
         orderBy: { field: UPDATED_AT, direction: DESC }
       ) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           ...PullRequestFields
         }
@@ -161,6 +165,35 @@ export const PULL_REQUESTS_QUERY = /* GraphQL */ `
   }
   ${PULL_REQUEST_FIELDS}
 `;
+
+/** Further pages of open PRs, for repos with more than one page (see fetch-pull-requests). */
+export const OPEN_PULL_REQUESTS_PAGE_QUERY = /* GraphQL */ `
+  query RepoOpenPullRequestsPage($owner: String!, $name: String!, $count: Int!, $after: String!) {
+    repository(owner: $owner, name: $name) {
+      open: pullRequests(
+        states: OPEN
+        first: $count
+        after: $after
+        orderBy: { field: UPDATED_AT, direction: DESC }
+      ) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          ...PullRequestFields
+        }
+      }
+    }
+  }
+  ${PULL_REQUEST_FIELDS}
+`;
+
+type PageInfo = { hasNextPage: boolean; endCursor: string | null };
+
+type OpenConnection = { pageInfo?: PageInfo; nodes: Array<PullRequestNode | null> | null };
+
+export type OpenPullRequestsPageResult = { repository: { open: OpenConnection } | null };
 
 /** GitHub's StatusState enum, as returned by statusCheckRollup.state. */
 type RollupState = "SUCCESS" | "FAILURE" | "ERROR" | "PENDING" | "EXPECTED";
@@ -207,7 +240,7 @@ export type PullRequestsQueryResult = {
     latestRelease?: { tagName: string; url: string; publishedAt: string | null } | null;
     recent?: { nodes: Array<PullRequestActivity | null> | null } | null;
     defaultBranchRef?: DefaultBranchRef;
-    open: { nodes: Array<PullRequestNode | null> | null };
+    open: OpenConnection;
     merged: { nodes: Array<PullRequestNode | null> | null };
   } | null;
 };
@@ -274,7 +307,11 @@ export function mapPullRequests(result: PullRequestsQueryResult): RepoPullReques
     return { open: [], merged: [], defaultBranch: null, meta: EMPTY_META, activity: [] };
   }
   const repo = result.repository;
-  const open = compact(result.repository.open.nodes).map(toPullRequest);
+  // A PR updated mid-pagination can show up on two pages; keep its first (newest) copy.
+  const seen = new Set<number>();
+  const open = compact(result.repository.open.nodes)
+    .filter((node) => !seen.has(node.number) && !!seen.add(node.number))
+    .map(toPullRequest);
   const merged = compact(result.repository.merged.nodes)
     .map(toPullRequest)
     .sort((a, b) => (b.mergedAt ?? "").localeCompare(a.mergedAt ?? ""));

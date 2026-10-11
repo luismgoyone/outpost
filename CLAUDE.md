@@ -65,8 +65,9 @@ pnpm build && pnpm test:e2e   # before opening a PR, or when touching pages or r
 - Functions run in `sin1` (`vercel.json`) to sit next to the Neon database (ap-southeast-1).
   Keep them co-located: from iad1 every query cost ~213ms. `/api/health/db` reports the
   region and DB round trip.
-- All GitHub reads go through `cached(repo, key, load)` (`src/lib/cache.ts`, 5-minute TTL,
-  stale copy served if GitHub fails). Add a `CacheKey` for new data types; the webhook and
+- All GitHub reads go through `cached(repo, key, load)` (`src/lib/cache.ts`, 5-minute TTL;
+  copies up to an hour old are served at once and refreshed with `after()`; any old copy is
+  served if GitHub fails). Add a `CacheKey` for new data types; the webhook and
   Sync button invalidate it. The shell layout must never call GitHub directly.
 - Migrations are applied manually (`pnpm db:migrate`) before merging a PR that needs them;
   preview deploys share the production database, so never run migrations in the build.
