@@ -2,6 +2,7 @@ import { CircleAlert, Clock, Eye, GitPullRequest, MessageSquareCode } from "luci
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ActionButton } from "@/components/action-button";
 import { CiStatusBadge } from "@/components/ci-status-badge";
 import { RepoChip } from "@/components/repo-chip";
 import { ReviewStatusBadge } from "@/components/review-status-badge";
@@ -15,6 +16,8 @@ import { daysSince, formatAge } from "@/lib/github/pull-requests";
 import { buildMyWork, needsMyAction, type WorkItem } from "@/lib/my-work";
 import { requireOwner } from "@/lib/owner";
 import { listConnectedRepos } from "@/lib/repos";
+
+import { nudgeReviewersAction } from "../write-actions";
 
 export const metadata: Metadata = { title: "My Work · Outpost" };
 
@@ -98,17 +101,29 @@ export default async function MyWorkPage() {
             items={work.myPullRequests}
             now={now}
             action={(item) => (
-              <a
-                href={item.pr.url}
-                target="_blank"
-                rel="noreferrer"
-                className={buttonVariants({
-                  size: "sm",
-                  variant: needsMyAction(item.pr) ? "destructive" : "outline",
-                })}
-              >
-                {needsMyAction(item.pr) ? "Resolve" : "View PR"}
-              </a>
+              <>
+                {item.pr.reviewState === "awaiting_review" &&
+                  item.pr.requestedReviewers.length > 0 && (
+                    <ActionButton
+                      action={nudgeReviewersAction}
+                      fields={{ repoId: item.repoId, number: item.pr.number }}
+                      label="Nudge reviewers"
+                      pendingLabel="Nudging…"
+                      ariaLabel={`Nudge reviewers of ${item.repoName}#${item.pr.number}`}
+                    />
+                  )}
+                <a
+                  href={item.pr.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonVariants({
+                    size: "sm",
+                    variant: needsMyAction(item.pr) ? "destructive" : "outline",
+                  })}
+                >
+                  {needsMyAction(item.pr) ? "Resolve" : "View PR"}
+                </a>
+              </>
             )}
           />
         )}

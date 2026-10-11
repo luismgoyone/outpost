@@ -62,6 +62,20 @@ keys found in PR titles and branch names (`ENG-142`, `eng-142-fix-login`). Set
 `LINEAR_TEAM_KEYS` (e.g. `ENG,OPS`) to only match your teams' prefixes; without it Outpost
 skips common look-alikes such as `UTF-8` and `release-2`.
 
+### Actions from Outpost (optional)
+
+Outpost can act, not just read: **Re-run failed jobs** on a repo's Workflows tab, **Nudge
+reviewers** on your PRs in My Work (a comment mentioning the pending reviewers, posted by the
+App's bot account), and **Redeploy** a failed Vercel production deploy on Deployments.
+
+- Re-run needs the GitHub App permission **Actions: Read and write**; nudging needs
+  **Pull requests: Read and write**. Change them under the App's **Permissions & events**,
+  then accept the new permissions on the installation (GitHub emails you a link).
+- Redeploy needs `VERCEL_TOKEN` (a token with access to the project's team). Without it the
+  button doesn't show.
+
+Until a permission is granted, the button explains what's missing instead of failing silently.
+
 ### End-to-end tests
 
 E2E tests never touch GitHub or your real database. They run the app against a mock GitHub
@@ -77,23 +91,23 @@ pnpm test:e2e   # app on :3100, mock GitHub on :4010
 
 All of them are listed with comments in [`.env.example`](.env.example).
 
-| Variable                                | Purpose                                                 |
-| --------------------------------------- | ------------------------------------------------------- |
-| `GITHUB_APP_ID`                         | GitHub App ID                                           |
-| `GITHUB_APP_PRIVATE_KEY`                | GitHub App private key (PEM)                            |
-| `GITHUB_APP_SLUG`                       | App slug, for the install link                          |
-| `GITHUB_WEBHOOK_SECRET`                 | Verifies GitHub webhook payloads                        |
-| `GITHUB_API_URL`                        | Optional GitHub API base URL (GHES, or e2e mock)        |
-| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth client for owner sign-in                   |
-| `AUTH_SECRET`                           | Auth.js session secret (`openssl rand -base64 32`)      |
-| `OWNER_GITHUB_LOGIN`                    | The only GitHub user allowed to sign in                 |
-| `VERCEL_TOKEN`                          | Optional, unused for now (deployments come from GitHub) |
-| `VERCEL_TEAM_ID`                        | Optional Vercel team ID                                 |
-| `DATABASE_URL`                          | Neon Postgres connection string                         |
-| `CRON_SECRET`                           | Optional. Authorizes Vercel Cron (Slack digest)         |
-| `SLACK_WEBHOOK_URL`                     | Optional. Slack incoming webhook for the daily digest   |
-| `LINEAR_WORKSPACE`                      | Optional. Linear workspace slug, enables issue links    |
-| `LINEAR_TEAM_KEYS`                      | Optional. Comma-separated Linear team prefixes          |
+| Variable                                | Purpose                                               |
+| --------------------------------------- | ----------------------------------------------------- |
+| `GITHUB_APP_ID`                         | GitHub App ID                                         |
+| `GITHUB_APP_PRIVATE_KEY`                | GitHub App private key (PEM)                          |
+| `GITHUB_APP_SLUG`                       | App slug, for the install link                        |
+| `GITHUB_WEBHOOK_SECRET`                 | Verifies GitHub webhook payloads                      |
+| `GITHUB_API_URL`                        | Optional GitHub API base URL (GHES, or e2e mock)      |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth client for owner sign-in                 |
+| `AUTH_SECRET`                           | Auth.js session secret (`openssl rand -base64 32`)    |
+| `OWNER_GITHUB_LOGIN`                    | The only GitHub user allowed to sign in               |
+| `VERCEL_TOKEN`                          | Optional. Enables Redeploy on failed Vercel deploys   |
+| `VERCEL_TEAM_ID`                        | Optional Vercel team ID                               |
+| `DATABASE_URL`                          | Neon Postgres connection string                       |
+| `CRON_SECRET`                           | Optional. Authorizes Vercel Cron (Slack digest)       |
+| `SLACK_WEBHOOK_URL`                     | Optional. Slack incoming webhook for the daily digest |
+| `LINEAR_WORKSPACE`                      | Optional. Linear workspace slug, enables issue links  |
+| `LINEAR_TEAM_KEYS`                      | Optional. Comma-separated Linear team prefixes        |
 
 ## Scripts
 

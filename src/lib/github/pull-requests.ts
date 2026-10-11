@@ -20,7 +20,7 @@ export type PullRequest = {
   reviewState: ReviewState;
   /** Distinct reviewers whose latest opinionated review is an approval. */
   approvals: number;
-  /** Logins (users) and slugs (teams) whose review is requested. */
+  /** Logins (users) and "org/team" slugs (teams) whose review is requested. */
   requestedReviewers: string[];
   headRefName: string;
   additions: number;
@@ -88,7 +88,7 @@ const PULL_REQUEST_FIELDS = /* GraphQL */ `
             login
           }
           ... on Team {
-            slug
+            combinedSlug
           }
         }
       }
@@ -215,7 +215,9 @@ type PullRequestNode = {
   reviewDecision?: ReviewDecision | null;
   latestOpinionatedReviews?: { nodes: Array<{ state: string } | null> | null } | null;
   reviewRequests?: {
-    nodes: Array<{ requestedReviewer: { login?: string; slug?: string } | null } | null> | null;
+    nodes: Array<{
+      requestedReviewer: { login?: string; combinedSlug?: string } | null;
+    } | null> | null;
   } | null;
   commits: {
     nodes: Array<{ commit: { statusCheckRollup: { state: RollupState } | null } } | null> | null;
@@ -276,7 +278,7 @@ function toPullRequest(node: PullRequestNode): PullRequest {
     (r) => r.state === "APPROVED",
   ).length;
   const requestedReviewers = compact(node.reviewRequests?.nodes)
-    .map((r) => r.requestedReviewer?.login ?? r.requestedReviewer?.slug)
+    .map((r) => r.requestedReviewer?.login ?? r.requestedReviewer?.combinedSlug)
     .filter((name): name is string => !!name);
   return {
     number: node.number,

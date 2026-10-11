@@ -2,6 +2,7 @@ import { cn } from "cn";
 import { ExternalLink, FileText, GitBranch } from "lucide-react";
 import Link from "next/link";
 
+import { RedeployButton } from "@/components/redeploy-button";
 import { RepoChip } from "@/components/repo-chip";
 import { StatusBadge, type StatusTone } from "@/components/status-badge";
 import {
@@ -112,6 +113,7 @@ export function DeploymentTable({ rows, now }: { rows: DeploymentRow[]; now: Dat
                     <FileText aria-hidden className="size-3.5" />
                   </a>
                 )}
+                <RedeployButton repoId={repoId} deployment={d} />
               </div>
             </TableCell>
           </TableRow>
