@@ -13,6 +13,9 @@
  *   palette → ⌘K command palette
  *   tickets → Linear issue links
  * POST /__slack stands in for a Slack incoming webhook; GET /__slack returns the last message.
+ *   flaky → write actions: failing workflows (re-run ok / 403), my PR to nudge, failed Vercel
+ *           production deploy to redeploy. POST /v13/deployments stands in for Vercel.
+ * GET /__writes lists the write requests (re-runs, comments, redeploys) received so far.
  * GET /__calls?repo=name returns how many times a repo's PR query hit this server.
  * GET /__slow?repo=name&ms=1000 makes that repo's next PR query slow (one shot).
  * "legacy" always fails its GraphQL query, to exercise per-repo error handling.
@@ -43,10 +46,14 @@ const repositories = [
   { id: 14, name: "lazy", full_name: "acme/lazy", owner, private: false },
   { id: 15, name: "palette", full_name: "acme/palette", owner, private: false },
   { id: 16, name: "tickets", full_name: "acme/tickets", owner, private: false },
+  { id: 17, name: "flaky", full_name: "acme/flaky", owner, private: false },
 ];
 
 /** The last message posted to the fake Slack webhook. */
 let lastSlackMessage: Record<string, unknown> | undefined;
+
+/** Write requests received (re-runs, comments, redeploys), for e2e assertions. */
+const writes: Array<{ route: string; body: Record<string, unknown> }> = [];
 
 /** PR-query calls per repo, so e2e tests can prove what the cache does. */
 const pullQueryCalls = new Map<string, number>();
@@ -109,6 +116,24 @@ const workflowFiles: Record<string, Record<string, string>> = {
 
 /** GET /repos/acme/:repo/actions/runs */
 function workflowRuns(repo: string) {
+  if (repo === "flaky") {
+    const failed = (id: number, workflowId: number, name: string) => ({
+      id,
+      workflow_id: workflowId,
+      name,
+      path: `.github/workflows/${name.toLowerCase()}.yml`,
+      event: "push",
+      head_branch: "main",
+      status: "completed",
+      conclusion: "failure",
+      run_started_at: ago(HOUR),
+      created_at: ago(HOUR),
+      updated_at: ago(HOUR - 60_000),
+      html_url: `https://github.com/acme/flaky/actions/runs/${id}`,
+    });
+    // CI can be re-run; re-running Lint is refused (App lacks Actions: write).
+    return { total_count: 2, workflow_runs: [failed(3001, 31, "CI"), failed(3101, 32, "Lint")] };
+  }
   if (repo !== "platform") return { total_count: 0, workflow_runs: [] };
   const run = (
     id: number,
@@ -168,7 +193,13 @@ function deployment(
   environment: string,
   state: string,
   createdMinutesAgo: number,
-  extra: { durationSec?: number; message?: string; ref?: string | null; url?: string } = {},
+  extra: {
+    durationSec?: number;
+    message?: string;
+    ref?: string | null;
+    url?: string;
+    logUrl?: string;
+  } = {},
 ) {
   const createdAt = ago(createdMinutesAgo * 60_000);
   return {
@@ -185,7 +216,7 @@ function deployment(
         new Date(createdAt).getTime() + (extra.durationSec ?? 30) * 1000,
       ).toISOString(),
       environmentUrl: extra.url ?? `https://${id}.example.app`,
-      logUrl: `https://vercel.example/logs/${id}`,
+      logUrl: extra.logUrl ?? `https://vercel.example/logs/${id}`,
     },
   };
 }
@@ -206,6 +237,12 @@ const deployments: Record<string, unknown[]> = {
     deployment("mk4", "Preview", "INACTIVE", 300, { ref: "old/branch", message: "old preview" }),
   ],
   billing: [deployment("bl1", "Production", "SUCCESS", 42, { durationSec: 70 })],
+  flaky: [
+    deployment("fl1", "Production", "FAILURE", 30, {
+      message: "feat: flaky deploy",
+      logUrl: "https://vercel.com/acme-team/flaky-web/AbC123xyz",
+    }),
+  ],
   platform: [deployment("pl1", "Production", "SUCCESS", 180, { message: "release v2.8.1" })],
 };
 
@@ -350,6 +387,15 @@ const pullRequests: Record<string, { open: unknown[]; merged: unknown[] }> = {
     ],
     merged: [],
   },
+  flaky: {
+    open: [
+      pr(9, "Owner PR awaiting review", "SUCCESS", {
+        author: author("e2e-owner"),
+        reviewRequests: requested("alice", "acme/web-team"),
+      }),
+    ],
+    merged: [],
+  },
   platform: { open: [], merged: [] },
   billing: {
     open: [
@@ -407,6 +453,26 @@ const server = createServer(async (req, res) => {
   }
   if (route === "GET /__calls") {
     return send(res, 200, { calls: pullQueryCalls.get(url.searchParams.get("repo") ?? "") ?? 0 });
+  }
+  if (route === "GET /__writes") return send(res, 200, writes);
+  const rerun = url.pathname.match(
+    /^\/repos\/acme\/([^/]+)\/actions\/runs\/(\d+)\/rerun-failed-jobs$/,
+  );
+  if (req.method === "POST" && rerun) {
+    if (rerun[2] === "3101") {
+      return send(res, 403, { message: "Resource not accessible by integration" });
+    }
+    writes.push({ route, body: {} });
+    return send(res, 201, {});
+  }
+  const comment = url.pathname.match(/^\/repos\/acme\/([^/]+)\/issues\/(\d+)\/comments$/);
+  if (req.method === "POST" && comment) {
+    writes.push({ route, body: await readJson(req) });
+    return send(res, 201, { id: writes.length });
+  }
+  if (route === "POST /v13/deployments") {
+    writes.push({ route: `${route}${url.search}`, body: await readJson(req) });
+    return send(res, 200, { id: "dpl_new", url: "flaky-web-new.vercel.app" });
   }
   if (route === "GET /app")
     return send(res, 200, { id: 1, slug: "outpost-e2e", name: "Outpost E2E" });

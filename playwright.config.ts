@@ -28,6 +28,8 @@ const appEnv = {
   CRON_SECRET: E2E.cronSecret,
   SLACK_WEBHOOK_URL: `${mockGitHubUrl}/__slack`,
   LINEAR_WORKSPACE: "acme-linear",
+  VERCEL_TOKEN: "e2e-vercel-token",
+  VERCEL_API_URL: mockGitHubUrl,
 };
 
 export default defineConfig({

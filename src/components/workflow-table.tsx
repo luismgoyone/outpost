@@ -22,7 +22,16 @@ const RUN: Record<RunState, { label: string; tone: StatusTone; cell: string }> =
   skipped: { label: "Skipped", tone: "neutral", cell: "bg-neutral/50" },
 };
 
-export function WorkflowTable({ workflows, now }: { workflows: WorkflowSummary[]; now: Date }) {
+export function WorkflowTable({
+  workflows,
+  now,
+  rowAction,
+}: {
+  workflows: WorkflowSummary[];
+  now: Date;
+  /** Extra control at the end of a row, e.g. "Re-run failed jobs". */
+  rowAction?: (workflow: WorkflowSummary) => React.ReactNode;
+}) {
   return (
     <Table>
       <TableHeader>
@@ -110,6 +119,7 @@ export function WorkflowTable({ workflows, now }: { workflows: WorkflowSummary[]
                   >
                     {formatAge(w.latest.startedAt, now)} ago
                   </a>
+                  {rowAction?.(w)}
                 </div>
               </TableCell>
             </TableRow>

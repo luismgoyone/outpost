@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth, isOwner } from "@/auth";
+import { ActionButton } from "@/components/action-button";
 import { CiStatusBadge } from "@/components/ci-status-badge";
 import { DeploymentTable } from "@/components/deployment-table";
 import { PullRequestTable } from "@/components/pull-request-table";
@@ -23,6 +24,7 @@ import { fetchWorkflows } from "@/lib/github/fetch-workflows";
 import { requireOwner } from "@/lib/owner";
 import { getConnectedRepo } from "@/lib/repos";
 
+import { rerunWorkflowAction } from "../../write-actions";
 import { setShippingAction } from "./actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -258,7 +260,21 @@ async function WorkflowsTab({ repo, now }: { repo: Repo; now: Date }) {
       {result.workflows.length === 0 ? (
         <PanelEmpty>No GitHub Actions runs yet.</PanelEmpty>
       ) : (
-        <WorkflowTable workflows={result.workflows} now={now} />
+        <WorkflowTable
+          workflows={result.workflows}
+          now={now}
+          rowAction={(w) =>
+            w.latest.state === "failure" && (
+              <ActionButton
+                action={rerunWorkflowAction}
+                fields={{ repoId: repo.id, runId: w.latest.id }}
+                label="Re-run failed jobs"
+                pendingLabel="Starting…"
+                ariaLabel={`Re-run failed jobs of ${w.name}`}
+              />
+            )
+          }
+        />
       )}
     </Panel>
   );
