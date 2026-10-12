@@ -60,3 +60,22 @@ export const statsCache = pgTable(
 );
 
 export type CacheRow = typeof statsCache.$inferSelect;
+
+/**
+ * Server errors (instrumentation.ts) and webhook deliveries, shown on Settings. Each kind is
+ * pruned to its newest rows on insert (see src/lib/activity.ts).
+ */
+export const activityLog = pgTable(
+  "activity_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** "error" | "webhook" */
+    kind: text("kind").notNull(),
+    summary: text("summary").notNull(),
+    detail: jsonb("detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("activity_log_kind_created_idx").on(t.kind, t.createdAt)],
+);
+
+export type ActivityRow = typeof activityLog.$inferSelect;

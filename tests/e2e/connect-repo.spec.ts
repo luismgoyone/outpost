@@ -21,7 +21,7 @@ test.describe("repositories", () => {
     // Tests share one database and run in parallel, so only assert on this test's repo.
     const available = page.getByRole("list", { name: "Available repositories" });
     await expect(available).toContainText("acme/storefront");
-    await page.getByRole("button", { name: "Connect acme/storefront" }).click();
+    await page.getByRole("button", { name: "Connect acme/storefront", exact: true }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "acme/storefront" })).toBeVisible();
     // The sidebar picks up the newly connected repo without a reload.
@@ -52,7 +52,9 @@ test.describe("repositories", () => {
         name: "acme/storefront",
       }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connect acme/storefront" })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Connect acme/storefront", exact: true }),
+    ).toHaveCount(0);
   });
 
   test("shows an empty state for a repo with no PRs", async ({ page, signInAs }) => {
@@ -81,7 +83,7 @@ test("the Connect button shows a loading state while connecting", async ({ page,
   await signInAs();
   await page.goto("/repositories");
   await slowNextFetch("slowpoke", 1200);
-  await page.getByRole("button", { name: "Connect acme/slowpoke" }).click();
+  await page.getByRole("button", { name: "Connect acme/slowpoke", exact: true }).click();
 
   const pending = page.getByRole("button", { name: "Connecting acme/slowpoke" });
   await expect(pending).toBeDisabled();

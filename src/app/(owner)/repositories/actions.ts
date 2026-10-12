@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { listInstallableRepos } from "@/lib/github/installations";
 import { requireOwner } from "@/lib/owner";
-import { connectRepo } from "@/lib/repos";
+import { connectRepo, disconnectRepo } from "@/lib/repos";
 
 export async function connectRepoAction(formData: FormData) {
   await requireOwner();
@@ -19,4 +19,14 @@ export async function connectRepoAction(formData: FormData) {
   // The shell's sidebar lists connected repos, so refresh the whole layout.
   revalidatePath("/", "layout");
   redirect(`/repositories/${connected.id}`);
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function disconnectRepoAction(formData: FormData) {
+  await requireOwner();
+  const id = String(formData.get("id") ?? "");
+  if (!UUID.test(id)) throw new Error("Invalid repository ID");
+  await disconnectRepo(id);
+  revalidatePath("/", "layout");
 }

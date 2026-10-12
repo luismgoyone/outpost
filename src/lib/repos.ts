@@ -43,3 +43,12 @@ export async function findConnectedRepo(owner: string, name: string): Promise<Re
 export async function setDeployStrategy(id: string, strategy: string | null): Promise<void> {
   await getDb().update(repos).set({ deployStrategy: strategy }).where(eq(repos.id, id));
 }
+
+/**
+ * Stop monitoring a repo. Its cached data and share links go with it (ON DELETE CASCADE);
+ * the GitHub App installation is untouched, so it can be reconnected any time.
+ */
+export async function disconnectRepo(id: string): Promise<Repo | undefined> {
+  const [repo] = await getDb().delete(repos).where(eq(repos.id, id)).returning();
+  return repo;
+}

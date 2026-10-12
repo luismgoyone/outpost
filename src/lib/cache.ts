@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, inArray, min } from "drizzle-orm";
+import { and, count, eq, inArray, min } from "drizzle-orm";
 import { after } from "next/server";
 
 import { getDb } from "@/db";
@@ -87,4 +87,12 @@ export async function invalidate(repoIds?: string[]): Promise<void> {
   if (repoIds === undefined) await db.delete(statsCache);
   else if (repoIds.length > 0)
     await db.delete(statsCache).where(inArray(statsCache.repoId, repoIds));
+}
+
+/** How much is cached and how old it is, for Settings. */
+export async function cacheSummary(): Promise<{ rows: number; oldest: Date | null }> {
+  const [row] = await getDb()
+    .select({ rows: count(), oldest: min(statsCache.fetchedAt) })
+    .from(statsCache);
+  return { rows: row?.rows ?? 0, oldest: row?.oldest ?? null };
 }

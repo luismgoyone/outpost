@@ -32,7 +32,7 @@ export { expect };
  */
 export async function connectRepo(page: Page, fullName: string) {
   await page.goto("/repositories");
-  const connect = page.getByRole("button", { name: `Connect ${fullName}` });
+  const connect = page.getByRole("button", { name: `Connect ${fullName}`, exact: true });
   const connected = page
     .getByRole("list", { name: "Connected repositories" })
     .getByRole("link", { name: fullName });

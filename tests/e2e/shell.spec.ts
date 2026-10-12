@@ -1,6 +1,9 @@
 import { expect, test } from "./support/fixtures";
 
-const SCREENS = [{ label: "Settings", path: "/settings", issue: "#16" }];
+const SCREENS = [
+  { label: "Releases", path: "/releases" },
+  { label: "Settings", path: "/settings" },
+];
 
 test("sidebar navigates every section and marks the active one", async ({ page, signInAs }) => {
   await signInAs();
@@ -15,7 +18,6 @@ test("sidebar navigates every section and marks the active one", async ({ page, 
     await nav.getByRole("link", { name: screen.label }).click();
     await expect(page).toHaveURL(screen.path);
     await expect(page.getByRole("heading", { level: 1, name: screen.label })).toBeVisible();
-    await expect(page.getByText(`Tracked in ${screen.issue}`)).toBeVisible();
     await expect(nav.getByRole("link", { name: screen.label })).toHaveAttribute(
       "aria-current",
       "page",
